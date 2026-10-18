@@ -91,6 +91,12 @@ CREATE TABLE IF NOT EXISTS solicitudes (
 
 CREATE INDEX IF NOT EXISTS idx_solicitudes_estado_agencia
   ON solicitudes (estado, agencia_id, creada_en);
+  ALTER TABLE solicitudes
+  ADD COLUMN IF NOT EXISTS finalidad      TEXT,
+  ADD COLUMN IF NOT EXISTS observaciones  TEXT,
+  ADD COLUMN IF NOT EXISTS decidido_por   INTEGER REFERENCES usuarios(id),
+  ADD COLUMN IF NOT EXISTS decidido_en    TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;
 `;
 
 const AGENCIAS = ["Trujillo", "Chiclayo", "Piura", "Tumbes"];
@@ -219,4 +225,25 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   await ensureSchema();
   const r = await pool().query<T>(text, params);
   return r.rows;
+}
+type Q = <R extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: unknown[],
+) => Promise<R[]>;
+
+export async function withTransaction<T>(fn: (q: Q) => Promise<T>): Promise<T> {
+  await ensureSchema();
+  const client = await pool().connect();
+  try {
+    await client.query("BEGIN");
+    const q: Q = async (text, params) => (await client.query(text, params)).rows as never;
+    const out = await fn(q);
+    await client.query("COMMIT");
+    return out;
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }

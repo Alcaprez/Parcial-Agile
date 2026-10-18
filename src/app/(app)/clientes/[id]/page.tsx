@@ -39,10 +39,10 @@ export default async function ClienteDetalle({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ registrado?: string }>;
+  searchParams: Promise<{ registrado?: string; solicitud?: string }>; // HU05
 }) {
   const { id: idParam } = await params;
-  const { registrado } = await searchParams;
+  const { registrado, solicitud } = await searchParams; // HU05
   const id = Number(idParam);
   if (!Number.isInteger(id) || id <= 0) notFound();
 
@@ -87,6 +87,14 @@ export default async function ClienteDetalle({
         </div>
       )}
 
+      {/* HU05: confirmación con el código generado */}
+      {solicitud && (
+        <div className="aviso ok" role="status">
+          Solicitud creada correctamente con el código <strong>{solicitud}</strong>. Quedó en
+          estado Pendiente.
+        </div>
+      )}
+
       <div className="panel">
         <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Datos del cliente (bloqueados)</h2>
         <div className="grid">
@@ -124,10 +132,10 @@ export default async function ClienteDetalle({
       </div>
 
       <div className="acciones">
-        {/* La creación de solicitudes corresponde a la HU05. */}
-        <button className="btn" type="button" disabled title="Disponible con la HU05 (Crear solicitud de préstamo)">
+        {/* HU05: enlace activo a la pantalla de crear solicitud */}
+        <Link className="btn" href={`/clientes/${c.id}/solicitud`}>
           Crear solicitud
-        </button>
+        </Link>
         <Link className="btn sec" href="/clientes">
           Volver a la lista
         </Link>
