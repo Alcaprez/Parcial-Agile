@@ -18,10 +18,16 @@ type Fila = {
   agencia: string;
 };
 
-export default async function PendientesPage() {
+export default async function PendientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ decidida?: string; resultado?: string }>; // HU07
+}) {
   const user = await usuarioActual();
   if (!user) redirect("/login");
   if (user.rol === "agente") redirect("/clientes");
+
+  const { decidida, resultado } = await searchParams; // HU07
 
   let filas: Fila[] | null;
   try {
@@ -54,6 +60,15 @@ export default async function PendientesPage() {
       <p className="sub">
         {verTodas ? "Todas las agencias" : `Agencia ${user.agencia}`} · de la más antigua a la más reciente.
       </p>
+
+      {/* HU07: confirmación tras aprobar o rechazar */}
+      {decidida && (
+        <div className="aviso ok" role="status">
+          Solicitud <strong>{decidida}</strong>{" "}
+          {resultado === "rechazada" ? "rechazada" : "aprobada"} correctamente. Ya no aparece en
+          la lista de pendientes.
+        </div>
+      )}
 
       {filas === null ? (
         <div className="panel">

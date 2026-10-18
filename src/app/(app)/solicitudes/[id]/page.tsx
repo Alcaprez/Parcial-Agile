@@ -4,6 +4,7 @@ import { query } from "@/lib/db";
 import { usuarioActual } from "@/lib/session";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import { fechaLima, soles } from "@/lib/formato";
+import DecisionSolicitud from "./DecisionSolicitud"; // HU07
 
 export const metadata = { title: "Detalle de solicitud — Préstamos Norte" };
 
@@ -30,6 +31,11 @@ type Sol = {
   rep_apellidos: string | null;
   rep_dni: string | null;
   direccion: string;
+  finalidad: string | null; // HU05
+  observaciones: string | null; // HU05
+  decidido_en: Date | null; // HU07
+  motivo_rechazo: string | null; // HU07
+  decisor: string | null; // HU07
 };
 
 function Dato({ t, v }: { t: string; v: string }) {
@@ -55,6 +61,8 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
     const rows = await query<Sol>(
       `SELECT s.id, s.codigo, s.estado, s.monto, s.plazo_meses, s.creada_en,
               s.telefono AS sol_telefono, s.correo AS sol_correo,
+              s.finalidad, s.observaciones,
+              s.decidido_en, s.motivo_rechazo, u.nombre AS decisor,
               s.agencia_id, a.nombre AS agencia,
               c.id AS cliente_id, c.codigo AS cod_cliente, c.tipo,
               c.nombres, c.apellidos, c.dni, c.razon_social, c.ruc,
@@ -62,6 +70,7 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
          FROM solicitudes s
          JOIN clientes c ON c.id = s.cliente_id
          JOIN agencias a ON a.id = s.agencia_id
+         LEFT JOIN usuarios u ON u.id = s.decidido_por
         WHERE s.id = $1`,
       [id],
     );
@@ -82,6 +91,7 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
   if (!s || (user.rol === "administrador" && s.agencia_id !== user.agenciaId)) notFound();
 
   const esPersona = s.tipo === "persona";
+  const puedeDecidir = s.estado === "Pendiente" && user.rol === "administrador"; // HU07
 
   return (
     <>
@@ -99,6 +109,8 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
           <Dato t="Plazo" v={`${s.plazo_meses} ${s.plazo_meses === 1 ? "mes" : "meses"}`} />
           <Dato t="Teléfono (registrado en la solicitud)" v={s.sol_telefono} />
           <Dato t="Correo (registrado en la solicitud)" v={s.sol_correo} />
+          <Dato t="Finalidad" v={s.finalidad ?? "—"} />
+          <Dato t="Observaciones" v={s.observaciones ?? "—"} />
         </dl>
       </div>
 
@@ -125,14 +137,23 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
         </dl>
       </div>
 
+      {/* HU07: datos de la decisión, solo si ya fue resuelta */}
+      {s.decidido_en && (
+        <div className="panel">
+          <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Decisión</h2>
+          <dl className="detalle">
+            <Dato t="Resultado" v={s.estado} />
+            <Dato t="Responsable" v={s.decisor ?? "—"} />
+            <Dato t="Fecha y hora" v={fechaLima(s.decidido_en)} />
+            {s.estado === "Rechazada" && <Dato t="Motivo del rechazo" v={s.motivo_rechazo ?? "—"} />}
+          </dl>
+        </div>
+      )}
+
+      {/* HU07: aprobar / rechazar (solo administrador y solo si está pendiente) */}
+      {puedeDecidir && <DecisionSolicitud solicitudId={s.id} codigo={s.codigo} />}
+
       <div className="acciones">
-        {/* La aprobación y el rechazo corresponden a la HU07. */}
-        <button className="btn" type="button" disabled title="Disponible con la HU07">
-          Aprobar
-        </button>
-        <button className="btn peligro" type="button" disabled title="Disponible con la HU07">
-          Rechazar
-        </button>
         <Link className="btn sec" href="/solicitudes/pendientes">
           Volver a pendientes
         </Link>
