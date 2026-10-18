@@ -69,7 +69,7 @@ export function validarCorreo(v: string): string | null {
 }
 
 function validarNombre(v: string, etiqueta: string): string | null {
-  if (!v) return `${etiqueta} es obligatorio.`;
+  if (!v) return "Este campo es obligatorio.";
   if (!NOMBRE_RE.test(v)) return `${etiqueta} solo admite letras y debe tener al menos 2 caracteres.`;
   return null;
 }

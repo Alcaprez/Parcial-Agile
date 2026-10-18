@@ -10,16 +10,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <header className="topbar">
-        <span className="marca">Préstamos Norte</span>
+        <span className="marca">
+          <span className="logo">PN</span>
+          Préstamos Norte
+        </span>
         <nav>
           <Link href="/clientes">Clientes</Link>
           <Link href="/clientes/nuevo">Registrar cliente</Link>
           {user.rol !== "agente" && <Link href="/solicitudes/pendientes">Solicitudes pendientes</Link>}
         </nav>
         <div className="quien">
-          <span>
-            {user.nombre} · {ETIQUETA_ROL[user.rol]}
-            {user.agencia ? ` · ${user.agencia}` : " · Todas las agencias"}
+          <span className="avatar">{user.nombre.charAt(0).toUpperCase()}</span>
+          <span className="datos">
+            <strong>{user.nombre}</strong>
+            <small>
+              {ETIQUETA_ROL[user.rol]} · {user.agencia ?? "Todas las agencias"}
+            </small>
           </span>
           <form action={logout}>
             <button type="submit">Cerrar sesión</button>
