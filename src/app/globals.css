@@ -301,3 +301,30 @@ dl.detalle dd { margin: 3px 0 0; font-weight: 500; font-size: 16px; }
   .topbar { padding: 8px 16px; }
   main.contenido { padding: 24px 14px 48px; }
 }
+/* ---------- Buscador ---------- */
+.buscador {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.buscador input {
+  flex: 1;
+  min-width: 240px;
+  max-width: 460px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.buscador input::placeholder { color: #9aa6bb; }
+.buscador input:hover { border-color: #aeb9cc; }
+.buscador input:focus {
+  outline: none;
+  border-color: var(--brand-600);
+  box-shadow: 0 0 0 4px rgba(23, 99, 171, 0.14);
+}

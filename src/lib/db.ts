@@ -20,6 +20,13 @@ function pool(): Pool {
 }
 
 const SCHEMA = `
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+CREATE TABLE IF NOT EXISTS agencias (
+  id      SERIAL PRIMARY KEY,
+  nombre  TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS agencias (
   id      SERIAL PRIMARY KEY,
   nombre  TEXT NOT NULL UNIQUE

@@ -1,45 +1,33 @@
 import Link from "next/link";
-import { query } from "@/lib/db";
 import ReintentarBtn from "@/components/ReintentarBtn";
+import BuscadorClientes from "@/components/BuscadorClientes";
+import { buscarClientes, type ClienteFila } from "@/lib/clientes";
 
 export const metadata = { title: "Clientes — Préstamos Norte" };
 
-type Fila = {
-  id: number;
-  codigo: string;
-  tipo: "persona" | "empresa";
-  nombre: string;
-  documento: string;
-  telefono: string;
-  agencia: string;
-};
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string | string[] }>;
+}) {
+  const { q } = await searchParams;
+  const texto = typeof q === "string" ? q : "";
+  const buscando = texto.trim().length > 0;
 
-async function cargar(): Promise<Fila[] | null> {
+  let filas: ClienteFila[] | null;
   try {
-    // A→Z por apellidos y nombres (personas) o por razón social (empresas).
-    return await query<Fila>(
-      `SELECT c.id, c.codigo, c.tipo,
-              CASE WHEN c.tipo = 'persona' THEN c.apellidos || ' ' || c.nombres
-                   ELSE c.razon_social END AS nombre,
-              COALESCE(c.dni, c.ruc) AS documento,
-              c.telefono, a.nombre AS agencia
-         FROM clientes c JOIN agencias a ON a.id = c.agencia_id
-        ORDER BY lower(CASE WHEN c.tipo = 'persona' THEN c.apellidos || ' ' || c.nombres
-                            ELSE c.razon_social END) ASC, c.id ASC`,
-    );
+    filas = await buscarClientes(texto);
   } catch (err) {
-    console.error("listar clientes:", err);
-    return null;
+    console.error("buscar clientes:", err);
+    filas = null;
   }
-}
-
-export default async function ClientesPage() {
-  const filas = await cargar();
 
   return (
     <>
       <h1>Clientes registrados</h1>
       <p className="sub">Clientes de todas las agencias, ordenados de la A a la Z.</p>
+
+      <BuscadorClientes valor={texto} />
 
       {filas === null ? (
         <div className="panel">
@@ -50,10 +38,12 @@ export default async function ClientesPage() {
         </div>
       ) : filas.length === 0 ? (
         <div className="panel vacio">
-          <p>No hay clientes registrados</p>
-          <Link className="btn" href="/clientes/nuevo">
-            Registrar cliente
-          </Link>
+          <p>{buscando ? "No se encontraron clientes" : "No hay clientes registrados"}</p>
+          {!buscando && (
+            <Link className="btn" href="/clientes/nuevo">
+              Registrar cliente
+            </Link>
+          )}
         </div>
       ) : (
         <div className="tabla-wrap">
@@ -76,7 +66,9 @@ export default async function ClientesPage() {
                   <td>{f.nombre}</td>
                   <td>{f.documento}</td>
                   <td>
-                    <span className="badge">{f.tipo === "persona" ? "Persona natural" : "Empresa"}</span>
+                    <span className="badge">
+                      {f.tipo === "persona" ? "Persona natural" : "Empresa"}
+                    </span>
                   </td>
                   <td>{f.telefono}</td>
                   <td>{f.agencia}</td>
