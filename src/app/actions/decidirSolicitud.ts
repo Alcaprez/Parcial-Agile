@@ -5,6 +5,8 @@ import { withTransaction } from "@/lib/db";
 import { usuarioActual } from "@/lib/session";
 import { LIMITE_CLIENTE } from "@/lib/reglas";
 import { soles } from "@/lib/formato";
+import { generarCronograma } from "@/lib/cronograma";
+import { TASA_MENSUAL } from "@/lib/reglas";
 
 export type DecisionResultado =
   | { ok: false; mensaje: string; motivo?: string }
@@ -57,28 +59,44 @@ export async function decidirSolicitud(
       await q("SELECT id FROM clientes WHERE id = $1 FOR UPDATE", [clienteId]);
 
       // 3) Releer la solicitud ya con el bloqueo.
-      const s = await q<{ estado: string; monto: string; agencia_id: number; codigo: string }>(
-        "SELECT estado, monto, agencia_id, codigo FROM solicitudes WHERE id = $1 FOR UPDATE",
-        [solicitudId],
-      );
+      const s = await q<{
+  estado: string;
+  monto: string;
+  plazo_meses: number;
+  tasa_mensual: string | null;
+  agencia_id: number;
+  codigo: string;
+}>(
+  "SELECT estado, monto, plazo_meses, tasa_mensual, agencia_id, codigo FROM solicitudes WHERE id = $1 FOR UPDATE",
+  [solicitudId],
+);
       if (!s[0]) return { tipo: "noexiste" };
       if (s[0].agencia_id !== user.agenciaId) return { tipo: "otraagencia" };
       if (s[0].estado !== "Pendiente") return { tipo: "yaresuelta", estado: s[0].estado };
+      
 
       // 4) Al aprobar: revalidar el límite contra las DEMÁS solicitudes del cliente.
-      if (decision === "aprobar") {
-        const lim = await q<{ excede: boolean; disponible: string }>(
-          `SELECT $3::numeric > ($2::numeric - COALESCE(SUM(monto), 0)) AS excede,
-                  ($2::numeric - COALESCE(SUM(monto), 0)) AS disponible
-             FROM solicitudes
-            WHERE cliente_id = $1 AND id <> $4
-              AND estado IN ('Pendiente','Aprobada')`,
-          [clienteId, LIMITE_CLIENTE, s[0].monto, solicitudId],
-        );
-        if (lim[0].excede) {
-          return { tipo: "limite", disponible: Math.max(0, Number(lim[0].disponible)) };
-        }
-      }
+if (decision === "aprobar") {
+  const h = await q<{ hoy: string }>(
+    "SELECT to_char((now() AT TIME ZONE 'America/Lima')::date, 'YYYY-MM-DD') AS hoy",
+  );
+  const tasa = s[0].tasa_mensual !== null ? Number(s[0].tasa_mensual) : TASA_MENSUAL;
+  const cro = generarCronograma(Number(s[0].monto), s[0].plazo_meses, tasa, h[0].hoy);
+  await q(
+    `INSERT INTO cuotas (solicitud_id, numero, vencimiento, capital, interes, total)
+     SELECT $1, x.n, x.v, x.c, x.i, x.tot
+       FROM unnest($2::int[], $3::date[], $4::numeric[], $5::numeric[], $6::numeric[])
+            AS x(n, v, c, i, tot)`,
+    [
+      solicitudId,
+      cro.map((c) => c.numero),
+      cro.map((c) => c.vencimiento),
+      cro.map((c) => c.capital),
+      cro.map((c) => c.interes),
+      cro.map((c) => c.total),
+    ],
+  );
+}
 
       // 5) Guardar la decisión (la condición evita pisar una resolución previa).
       const upd = await q<{ id: number }>(

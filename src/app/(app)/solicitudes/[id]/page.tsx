@@ -5,6 +5,7 @@ import { usuarioActual } from "@/lib/session";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import { fechaLima, soles } from "@/lib/formato";
 import DecisionSolicitud from "./DecisionSolicitud"; // HU07
+import TablaCronograma, { type CuotaVista } from "@/components/TablaCronograma";
 
 export const metadata = { title: "Detalle de solicitud — Préstamos Norte" };
 

@@ -97,6 +97,22 @@ CREATE INDEX IF NOT EXISTS idx_solicitudes_estado_agencia
   ADD COLUMN IF NOT EXISTS decidido_por   INTEGER REFERENCES usuarios(id),
   ADD COLUMN IF NOT EXISTS decidido_en    TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS motivo_rechazo TEXT;
+  ALTER TABLE solicitudes
+  
+  ADD COLUMN IF NOT EXISTS tasa_mensual NUMERIC(7,6);
+
+  CREATE TABLE IF NOT EXISTS cuotas (
+  id            SERIAL PRIMARY KEY,
+  solicitud_id  INTEGER NOT NULL REFERENCES solicitudes(id),
+  numero        INTEGER NOT NULL,
+  vencimiento   DATE NOT NULL,
+  capital       NUMERIC(12,2) NOT NULL,
+  interes       NUMERIC(12,2) NOT NULL,
+  total         NUMERIC(12,2) NOT NULL,
+  estado        TEXT NOT NULL DEFAULT 'Programada'
+                CHECK (estado IN ('Programada','Próxima a vencer','Vencida pendiente de verificación')),
+  UNIQUE (solicitud_id, numero)
+);
 `;
 
 const AGENCIAS = ["Trujillo", "Chiclayo", "Piura", "Tumbes"];

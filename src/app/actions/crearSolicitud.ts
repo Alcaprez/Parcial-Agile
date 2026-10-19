@@ -5,9 +5,9 @@ import { withTransaction } from "@/lib/db";
 import { usuarioActual } from "@/lib/session";
 import {
   LIMITE_CLIENTE,
+  TASA_MENSUAL,
   normalizarSolicitud,
   parseMonto,
-  plazoPorMonto,
   validarSolicitud,
   type SolicitudInput,
 } from "@/lib/reglas";
@@ -44,7 +44,7 @@ export async function crearSolicitud(
   if (Object.keys(errores).length > 0) return { ok: false, errores };
 
   const monto = parseMonto(datos.monto)!;
-  const plazo = plazoPorMonto(monto)!; // calculado en el servidor, nunca viene del cliente
+  const plazo = Number(datos.plazo); 
 
   let salida: Salida;
   try {
@@ -67,24 +67,25 @@ export async function crearSolicitud(
         return { tipo: "limite", disponible: Math.max(0, Number(lim[0].disponible)) };
       }
 
-      const ins = await q<{ codigo: string }>(
-        `INSERT INTO solicitudes
-           (cliente_id, agencia_id, monto, plazo_meses, finalidad, observaciones,
-            telefono, correo, creado_por)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-         RETURNING codigo`,
-        [
-          clienteId,
-          user.agenciaId,
-          monto,
-          plazo,
-          datos.finalidad,
-          datos.observaciones || null,
-          c[0].telefono, // se copian: la solicitud conserva el contacto "tal como se registró"
-          c[0].correo,
-          user.id,
-        ],
-      );
+const ins = await q<{ codigo: string }>(
+  `INSERT INTO solicitudes
+     (cliente_id, agencia_id, monto, plazo_meses, tasa_mensual, finalidad, observaciones,
+      telefono, correo, creado_por)
+   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+   RETURNING codigo`,
+  [
+    clienteId,
+    user.agenciaId,
+    monto,
+    plazo,
+    TASA_MENSUAL,
+    datos.finalidad,
+    datos.observaciones || null,
+    c[0].telefono,
+    c[0].correo,
+    user.id,
+  ],
+);
       return { tipo: "ok", codigo: ins[0].codigo };
     });
   } catch (err) {

@@ -1,15 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { crearSolicitud } from "@/app/actions/crearSolicitud";
+import { generarCronograma } from "@/lib/cronograma";
 import {
+  TASA_MENSUAL,
   parseMonto,
-  plazoPorMonto,
+  plazosPorMonto,
   solicitudVacia,
   validarSolicitud,
   type SolicitudInput,
 } from "@/lib/reglas";
+import { soles } from "@/lib/formato";
+import TablaCronograma from "@/components/TablaCronograma";
 import type { Errores } from "@/lib/validators";
+
+function hoyISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export default function SolicitudForm({
   clienteId,
@@ -24,11 +33,28 @@ export default function SolicitudForm({
   const [pending, start] = useTransition();
 
   const monto = parseMonto(v.monto);
-  const plazo = monto ? plazoPorMonto(monto) : null;
+  const opciones = monto && monto <= disponible ? plazosPorMonto(monto) : [];
+  const plazo = Number(v.plazo);
+
+  const cronograma = useMemo(
+    () =>
+      monto && opciones.includes(plazo)
+        ? generarCronograma(monto, plazo, TASA_MENSUAL, hoyISO())
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monto, plazo, v.plazo],
+  );
 
   function cambiar(name: keyof SolicitudInput, valor: string) {
     const limpio = name === "monto" ? valor.replace(/[^\d.,]/g, "") : valor;
-    setV((p) => ({ ...p, [name]: limpio }));
+    setV((p) => {
+      const sig = { ...p, [name]: limpio };
+      if (name === "monto") {
+        const m = parseMonto(limpio);
+        if (!m || !plazosPorMonto(m).includes(Number(p.plazo))) sig.plazo = "";
+      }
+      return sig;
+    });
     if (errores[name]) setErrores((p) => ({ ...p, [name]: "" }));
     setMensaje(null);
   }
@@ -49,6 +75,8 @@ export default function SolicitudForm({
       }
     });
   }
+
+  const totalPagar = cronograma?.reduce((a, c) => a + c.total, 0) ?? 0;
 
   return (
     <form onSubmit={alEnviar} noValidate>
@@ -80,15 +108,29 @@ export default function SolicitudForm({
           </div>
 
           <div className="campo">
-            <label htmlFor="plazo">Plazo (meses)</label>
-            <input
+            <label htmlFor="plazo">Plazo *</label>
+            <select
               id="plazo"
-              value={plazo ? `${plazo} meses` : ""}
-              placeholder="Se calcula según el monto"
-              readOnly
-              aria-readonly="true"
-            />
-            <span className="ayuda">Calculado automáticamente</span>
+              value={v.plazo}
+              onChange={(e) => cambiar("plazo", e.target.value)}
+              disabled={opciones.length === 0}
+              className={errores.plazo ? "invalido" : ""}
+              aria-invalid={Boolean(errores.plazo)}
+            >
+              <option value="">
+                {opciones.length === 0 ? "Ingrese primero el monto" : "Seleccione…"}
+              </option>
+              {opciones.map((p) => (
+                <option key={p} value={p}>
+                  {p} meses
+                </option>
+              ))}
+            </select>
+            {errores.plazo ? (
+              <span className="error">{errores.plazo}</span>
+            ) : (
+              <span className="ayuda">Las opciones dependen del monto</span>
+            )}
           </div>
 
           <div className="campo" style={{ gridColumn: "1 / -1" }}>
@@ -122,6 +164,37 @@ export default function SolicitudForm({
           Una vez creada, la solicitud no podrá ser modificada por el agente.
         </p>
       </div>
+
+      {cronograma && (
+        <div className="panel">
+          <h2>Simulación del cronograma (referencial)</h2>
+          <dl className="detalle">
+            <div>
+              <dt>Cuota mensual aprox.</dt>
+              <dd>
+                <strong>{soles(cronograma[0].total)}</strong>
+              </dd>
+            </div>
+            <div>
+              <dt>Total a pagar</dt>
+              <dd>{soles(totalPagar)}</dd>
+            </div>
+            <div>
+              <dt>Tasa mensual</dt>
+              <dd>{(TASA_MENSUAL * 100).toFixed(2)}%</dd>
+            </div>
+          </dl>
+          <details style={{ marginTop: 14 }}>
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Ver cronograma completo</summary>
+            <div style={{ marginTop: 10 }}>
+              <TablaCronograma cuotas={cronograma} />
+            </div>
+          </details>
+          <p className="ayuda" style={{ marginBottom: 0 }}>
+            Las fechas definitivas se fijan cuando el administrador apruebe la solicitud.
+          </p>
+        </div>
+      )}
 
       <div className="acciones">
         <button className="btn" type="submit" disabled={pending}>
