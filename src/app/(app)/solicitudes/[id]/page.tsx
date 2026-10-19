@@ -58,6 +58,7 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
   if (!Number.isInteger(id) || id <= 0) notFound();
 
   let s: Sol | undefined;
+  let cuotas: CuotaVista[] = [];
   try {
     const rows = await query<Sol>(
       `SELECT s.id, s.codigo, s.estado, s.monto, s.plazo_meses, s.creada_en,
@@ -76,6 +77,14 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
       [id],
     );
     s = rows[0];
+    if (s && s.estado === "Aprobada") {
+  cuotas = await query<CuotaVista>(
+    `SELECT numero, to_char(vencimiento, 'YYYY-MM-DD') AS vencimiento,
+            capital, interes, total, estado
+       FROM cuotas WHERE solicitud_id = $1 ORDER BY numero`,
+    [s.id],
+  );
+}
   } catch (err) {
     console.error("detalle solicitud:", err);
     return (
@@ -150,7 +159,23 @@ export default async function SolicitudDetalle({ params }: { params: Promise<{ i
           </dl>
         </div>
       )}
-
+      {s.estado === "Aprobada" && (
+  <div className="panel">
+    <h2>Cronograma de pagos (programado)</h2>
+    {cuotas.length === 0 ? (
+      <p className="sub" style={{ margin: 0 }}>
+        Esta solicitud se aprobó antes de existir el cronograma, por lo que no tiene cuotas generadas.
+      </p>
+    ) : (
+      <>
+        <TablaCronograma cuotas={cuotas} />
+        <p className="ayuda" style={{ marginBottom: 0 }}>
+          Montos programados, no cobrados. El desembolso aún no está registrado en el sistema.
+        </p>
+      </>
+    )}
+  </div>
+)}
       {/* HU07: aprobar / rechazar (solo administrador y solo si está pendiente) */}
       {puedeDecidir && <DecisionSolicitud solicitudId={s.id} codigo={s.codigo} />}
 
