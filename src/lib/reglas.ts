@@ -6,19 +6,31 @@ export const LIMITE_CLIENTE = 10000;
 /** Tasa de interés mensual. AJUSTAR con el negocio (0.03 = 3% mensual). */
 export const TASA_MENSUAL = 0.03;
 
-/** Plazos (meses) que se ofrecen según el monto. AJUSTAR con el negocio. */
-export const PLAZOS_POR_MONTO = [
-  { hasta: 1000, plazos: [3, 6] },
-  { hasta: 2000, plazos: [3, 6, 9, 12] },
-  { hasta: 4000, plazos: [6, 9, 12, 18] },
-  { hasta: 6000, plazos: [12, 18, 24] },
-  { hasta: 10000, plazos: [12, 18, 24, 36] },
-] as const;
+/** Plazos estándar que el negocio ofrece (meses). */
+export const PLAZOS_ESTANDAR = [3, 6, 9, 12, 18, 24, 36, 48, 60];
 
+/** Plazo máximo absoluto. Coincide con el CHECK de la tabla solicitudes. */
+export const PLAZO_MAXIMO = 60;
+
+export const PLAZO_MAXIMO_POR_MONTO = [
+  { hasta: 500, maximo: 6 },
+  { hasta: 1000, maximo: 12 },
+  { hasta: 2000, maximo: 18 },
+  { hasta: 4000, maximo: 24 },
+  { hasta: 6000, maximo: 36 },
+  { hasta: 8000, maximo: 48 },
+  { hasta: 10000, maximo: PLAZO_MAXIMO },
+];
+
+export function plazoMaximoPorMonto(monto: number): number | null {
+  if (!Number.isFinite(monto) || monto <= 0) return null;
+  return PLAZO_MAXIMO_POR_MONTO.find((t) => monto <= t.hasta)?.maximo ?? null;
+}
+
+/** Plazos que se ofrecen para un monto: los estándar hasta el máximo permitido. */
 export function plazosPorMonto(monto: number): number[] {
-  if (!Number.isFinite(monto) || monto <= 0) return [];
-  const t = PLAZOS_POR_MONTO.find((x) => monto <= x.hasta);
-  return t ? [...t.plazos] : [];
+  const max = plazoMaximoPorMonto(monto);
+  return max === null ? [] : PLAZOS_ESTANDAR.filter((p) => p <= max);
 }
 
 export type SolicitudInput = {
