@@ -23,7 +23,8 @@ const BASE = `
     FROM clientes c
     JOIN agencias a ON a.id = c.agencia_id`;
 
-const ORDEN = `ORDER BY unaccent(lower(${NOMBRE_SQL})) ASC, c.id ASC`;
+// En cola: el cliente registrado primero (CLI-0001) aparece primero.
+const ORDEN = `ORDER BY c.id ASC`;
 
 /** Escapa los comodines de LIKE para que el usuario no pueda usarlos. */
 const esc = (s: string) => s.replace(/[\\%_]/g, "\\$&");

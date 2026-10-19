@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Préstamos Norte — Gestión multi agencia",
+  title: "ALGARROBO PRESTAMOS — Gestión multi agencia",
   description: "Sistema web de gestión de préstamos multi sucursal",
 };
 

@@ -7,7 +7,7 @@ import { fechaLima, soles } from "@/lib/formato";
 import DecisionSolicitud from "./DecisionSolicitud"; // HU07
 import TablaCronograma, { type CuotaVista } from "@/components/TablaCronograma";
 
-export const metadata = { title: "Detalle de solicitud — Préstamos Norte" };
+export const metadata = { title: "Detalle de solicitud — ALGARROBO" };
 
 type Sol = {
   id: number;

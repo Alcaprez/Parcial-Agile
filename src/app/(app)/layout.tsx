@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
+import { Marca } from "@/components/Logo";
 import { ETIQUETA_ROL, usuarioActual } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,23 +11,24 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <header className="topbar">
-        <span className="marca">
-          <span className="logo">PN</span>
-          Préstamos Norte
-        </span>
+        <Link href="/" className="marca" style={{ textDecoration: "none" }} aria-label="ALGARROBO — inicio">
+          <Marca size={38} />
+        </Link>
         <nav>
           <Link href="/clientes">Clientes</Link>
-          <Link href="/clientes/nuevo">Registrar cliente</Link>
+          {user.rol !== "administrador" && <Link href="/clientes/nuevo">Registrar cliente</Link>}
           {user.rol !== "agente" && <Link href="/solicitudes/pendientes">Solicitudes pendientes</Link>}
         </nav>
         <div className="quien">
-          <span className="avatar">{user.nombre.charAt(0).toUpperCase()}</span>
-          <span className="datos">
-            <strong>{user.nombre}</strong>
-            <small>
-              {ETIQUETA_ROL[user.rol]} · {user.agencia ?? "Todas las agencias"}
-            </small>
-          </span>
+          <Link href="/cuenta" title="Mi cuenta y contraseña" style={{ display: "flex", alignItems: "center", gap: 12, color: "inherit", textDecoration: "none" }}>
+            <span className="avatar">{user.nombre.charAt(0).toUpperCase()}</span>
+            <span className="datos">
+              <strong>{user.nombre}</strong>
+              <small>
+                {ETIQUETA_ROL[user.rol]} · {user.agencia ?? "Todas las agencias"}
+              </small>
+            </span>
+          </Link>
           <form action={logout}>
             <button type="submit">Cerrar sesión</button>
           </form>

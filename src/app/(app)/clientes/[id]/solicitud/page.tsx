@@ -7,7 +7,7 @@ import { usuarioActual } from "@/lib/session";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import SolicitudForm from "./SolicitudForm";
 
-export const metadata = { title: "Crear solicitud — Préstamos Norte" };
+export const metadata = { title: "Crear solicitud — ALGARROBO" };
 
 type Cli = {
   id: number;

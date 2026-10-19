@@ -5,7 +5,7 @@ import { usuarioActual } from "@/lib/session";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import { fechaLima, soles } from "@/lib/formato";
 
-export const metadata = { title: "Solicitudes pendientes — Préstamos Norte" };
+export const metadata = { title: "Solicitudes pendientes — ALGARROBO" };
 
 type Fila = {
   id: number;

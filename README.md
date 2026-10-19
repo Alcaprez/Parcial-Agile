@@ -1,4 +1,4 @@
-# Préstamos Norte — Parcial Agile
+# ALGARROBO — Parcial Agile
 
 Sistema web de gestión de préstamos multi agencia (Next.js + PostgreSQL).
 

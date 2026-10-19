@@ -4,7 +4,7 @@ import { query } from "@/lib/db";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import ContactoForm from "./ContactoForm";
 
-export const metadata = { title: "Detalle de cliente — Préstamos Norte" };
+export const metadata = { title: "Detalle de cliente — ALGARROBO" };
 
 type Cliente = {
   id: number;
