@@ -5,7 +5,7 @@ export function LogoMark({ size = 36 }: { size?: number }) {
       height={size}
       viewBox="0 0 64 64"
       role="img"
-      aria-label="Algarrobo"
+      aria-label="ALGARROBO"
       style={{ display: "block", flex: "none" }}
     >
       <defs>
@@ -43,7 +43,7 @@ export function Marca({ size = 38, claro = true }: { size?: number; claro?: bool
     <span style={{ display: "inline-flex", alignItems: "center", gap: 11, color }}>
       <LogoMark size={size} />
       <span style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
-        <span style={{ fontSize: size * 0.52, fontWeight: 800, letterSpacing: "-0.02em" }}>Algarrobo</span>
+        <span style={{ fontSize: size * 0.44, fontWeight: 800, letterSpacing: "0.06em" }}>ALGARROBO</span>
         <span
           style={{
             fontSize: size * 0.24,

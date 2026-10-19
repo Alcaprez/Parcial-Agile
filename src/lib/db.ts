@@ -21,6 +21,19 @@ function pool(): Pool {
 
 const SCHEMA = `
 CREATE EXTENSION IF NOT EXISTS unaccent;
+-- Código de cliente = máximo existente + 1. Si se borran todos los clientes, vuelve a CLI-0001.
+-- El candado serializa altas simultáneas para no repetir códigos.
+CREATE OR REPLACE FUNCTION siguiente_codigo_cliente() RETURNS text
+LANGUAGE plpgsql AS $$
+DECLARE n integer;
+BEGIN
+  PERFORM pg_advisory_xact_lock(727002);
+  SELECT COALESCE(MAX(substr(codigo, 5)::integer), 0) + 1 INTO n FROM clientes;
+  RETURN 'CLI-' || lpad(n::text, 4, '0');
+END $$;
+
+ALTER TABLE clientes ALTER COLUMN codigo SET DEFAULT siguiente_codigo_cliente();
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pass_version INTEGER NOT NULL DEFAULT 1;
 
 CREATE TABLE IF NOT EXISTS agencias (
   id      SERIAL PRIMARY KEY,
@@ -101,6 +114,47 @@ CREATE INDEX IF NOT EXISTS idx_solicitudes_estado_agencia
 
 const AGENCIAS = ["Trujillo", "Chiclayo", "Piura", "Tumbes"];
 
+// Cada usuario tiene su propia contraseña inicial. Cada uno puede cambiarla en "Mi cuenta".
+const ABREV: Record<string, string> = { Trujillo: "Tru", Chiclayo: "Chi", Piura: "Piu", Tumbes: "Tum" };
+const PASS_VERSION = 2; // al subirla, los usuarios semilla sin contraseña propia reciben la nueva inicial
+
+function usuariosSemilla() {
+  const lista: { nombre: string; usuario: string; rol: string; agencia: string | null; pass: string }[] = [
+    { nombre: "Dueño del negocio", usuario: "dueno", rol: "dueno", agencia: null, pass: "Dueno@Alg26" },
+  ];
+  for (const ag of AGENCIAS) {
+    const slug = ag.toLowerCase();
+    lista.push(
+      { nombre: `Administrador ${ag}`, usuario: `admin.${slug}`, rol: "administrador", agencia: ag, pass: `Admin${ABREV[ag]}@Alg26` },
+      { nombre: `Agente ${ag}`, usuario: `agente.${slug}`, rol: "agente", agencia: ag, pass: `Agente${ABREV[ag]}@Alg26` },
+    );
+  }
+  return lista;
+}
+
+async function sembrarUsuarios(p: Pool) {
+  const vacia = (await p.query("SELECT 1 FROM usuarios LIMIT 1")).rows.length === 0;
+  for (const u of usuariosSemilla()) {
+    if (vacia) {
+      await p.query(
+        `INSERT INTO usuarios (nombre, usuario, password_hash, rol, agencia_id, pass_version)
+         VALUES ($1, $2, $3, $4, (SELECT id FROM agencias WHERE nombre = $5), $6)`,
+        [u.nombre, u.usuario, await bcrypt.hash(u.pass, 10), u.rol, u.agencia, PASS_VERSION],
+      );
+    } else {
+      // Migra a la contraseña individual solo a quien aún no cambió la suya (pass_version < 2).
+      const ex = await p.query("SELECT 1 FROM usuarios WHERE usuario = $1 AND pass_version < $2", [u.usuario, PASS_VERSION]);
+      if (ex.rows.length > 0) {
+        await p.query("UPDATE usuarios SET password_hash = $2, pass_version = $3 WHERE usuario = $1", [
+          u.usuario,
+          await bcrypt.hash(u.pass, 10),
+          PASS_VERSION,
+        ]);
+      }
+    }
+  }
+}
+
 async function seed(p: Pool) {
   for (const nombre of AGENCIAS) {
     await p.query(
@@ -109,29 +163,7 @@ async function seed(p: Pool) {
     );
   }
 
-  const { rows } = await p.query("SELECT 1 FROM usuarios LIMIT 1");
-  if (rows.length === 0) {
-    const pass = process.env.SEED_PASSWORD || "Parcial2026!";
-    const hash = await bcrypt.hash(pass, 10);
-    await p.query(
-      `INSERT INTO usuarios (nombre, usuario, password_hash, rol, agencia_id)
-       VALUES ('Dueño del negocio', 'dueno', $1, 'dueno', NULL)`,
-      [hash],
-    );
-    for (const nombre of AGENCIAS) {
-      const slug = nombre.toLowerCase();
-      await p.query(
-        `INSERT INTO usuarios (nombre, usuario, password_hash, rol, agencia_id)
-         SELECT $1, $2, $3, 'administrador', id FROM agencias WHERE nombre = $4`,
-        [`Administrador ${nombre}`, `admin.${slug}`, hash, nombre],
-      );
-      await p.query(
-        `INSERT INTO usuarios (nombre, usuario, password_hash, rol, agencia_id)
-         SELECT $1, $2, $3, 'agente', id FROM agencias WHERE nombre = $4`,
-        [`Agente ${nombre}`, `agente.${slug}`, hash, nombre],
-      );
-    }
-  }
+  await sembrarUsuarios(p);
 
   // Datos de demostración (solo si SEED_DEMO=true y no hay clientes aún).
   if (process.env.SEED_DEMO === "true") {

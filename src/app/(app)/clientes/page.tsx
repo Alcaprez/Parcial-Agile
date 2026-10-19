@@ -2,6 +2,7 @@ import Link from "next/link";
 import ReintentarBtn from "@/components/ReintentarBtn";
 import BuscadorClientes from "@/components/BuscadorClientes";
 import { buscarClientes, type ClienteFila } from "@/lib/clientes";
+import { usuarioActual } from "@/lib/session";
 
 export const metadata = { title: "Clientes — ALGARROBO" };
 
@@ -10,6 +11,8 @@ export default async function ClientesPage({
 }: {
   searchParams: Promise<{ q?: string | string[] }>;
 }) {
+  const user = await usuarioActual();
+  const puedeRegistrar = user?.rol !== "administrador";
   const { q } = await searchParams;
   const texto = typeof q === "string" ? q : "";
   const buscando = texto.trim().length > 0;

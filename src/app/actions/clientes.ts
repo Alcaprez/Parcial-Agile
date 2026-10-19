@@ -61,11 +61,8 @@ async function buscarDuplicado(i: ClienteInput): Promise<ClienteExistente | null
 export async function registrarCliente(entrada: ClienteInput): Promise<RegistroResultado> {
   const user = await usuarioActual();
   if (!user) redirect("/login");
-  if (!user.agenciaId) {
-    return {
-      ok: false,
-      mensaje: "El dueño no está asociado a una agencia. Ingrese con un usuario de agencia para registrar clientes.",
-    };
+    if (user.rol === "administrador") {
+    return { ok: false, mensaje: "El administrador no puede registrar clientes." };
   }
 
   const datos = normalizarCliente(entrada);

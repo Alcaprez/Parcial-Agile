@@ -1,14 +1,16 @@
+import { redirect } from "next/navigation";
+import { usuarioActual } from "@/lib/session";
 import ClienteForm from "./ClienteForm";
 
 export const metadata = { title: "Registrar cliente — ALGARROBO" };
 
-export default function NuevoClientePage() {
+export default async function NuevoClientePage() {
+  const user = await usuarioActual();
+  if (!user) redirect("/login");
+  if (user.rol === "administrador") redirect("/clientes"); // el administrador no registra clientes
   return (
     <>
       <h1>Registrar cliente</h1>
-      <p className="sub">
-        Persona natural o empresa. Una vez registrado, solo podrán modificarse el teléfono y el correo.
-      </p>
       <ClienteForm />
     </>
   );
