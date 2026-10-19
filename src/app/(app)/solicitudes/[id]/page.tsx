@@ -6,7 +6,7 @@ import ReintentarBtn from "@/components/ReintentarBtn";
 import { fechaLima, soles } from "@/lib/formato";
 import DecisionSolicitud from "./DecisionSolicitud"; // HU07
 
-export const metadata = { title: "Detalle de solicitud — Préstamos Norte" };
+export const metadata = { title: "Detalle de solicitud — ALGARROBO" };
 
 type Sol = {
   id: number;

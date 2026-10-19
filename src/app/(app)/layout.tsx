@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { logout } from "@/app/actions/auth";
+import { Marca } from "@/components/Logo";
 import { ETIQUETA_ROL, usuarioActual } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,10 +11,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <header className="topbar">
-        <span className="marca">
-          <span className="logo">PN</span>
-          Préstamos Norte
-        </span>
+        <Link href="/" className="marca" style={{ textDecoration: "none" }} aria-label="Algarrobo — inicio">
+          <Marca size={38} />
+        </Link>
         <nav>
           <Link href="/clientes">Clientes</Link>
           <Link href="/clientes/nuevo">Registrar cliente</Link>

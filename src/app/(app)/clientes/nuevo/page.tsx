@@ -1,6 +1,6 @@
 import ClienteForm from "./ClienteForm";
 
-export const metadata = { title: "Registrar cliente — Préstamos Norte" };
+export const metadata = { title: "Registrar cliente — ALGARROBO" };
 
 export default function NuevoClientePage() {
   return (

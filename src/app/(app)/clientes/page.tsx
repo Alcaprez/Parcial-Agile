@@ -3,7 +3,7 @@ import ReintentarBtn from "@/components/ReintentarBtn";
 import BuscadorClientes from "@/components/BuscadorClientes";
 import { buscarClientes, type ClienteFila } from "@/lib/clientes";
 
-export const metadata = { title: "Clientes — Préstamos Norte" };
+export const metadata = { title: "Clientes — ALGARROBO" };
 
 export default async function ClientesPage({
   searchParams,
@@ -25,7 +25,6 @@ export default async function ClientesPage({
   return (
     <>
       <h1>Clientes registrados</h1>
-      <p className="sub">Clientes de todas las agencias, ordenados de la A a la Z.</p>
 
       <BuscadorClientes valor={texto} />
 
