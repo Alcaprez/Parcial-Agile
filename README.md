@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ALGARROBO — Parcial Agile
 
-## Getting Started
+Sistema web de gestión de préstamos multi agencia (Next.js + PostgreSQL).
 
-First, run the development server:
+## Alcance de esta entrega
+- Login por usuario y contraseña (sesión JWT en cookie httpOnly, 8 h).
+- HU01 Registrar cliente (persona natural y empresa).
+- HU03 Listar clientes.
+- HU06 Listar solicitudes pendientes y revisar su información.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Variables de entorno
+Ver `.env.example`. Obligatorias: `DATABASE_URL`, `JWT_SECRET`.
+Opcionales: `SEED_PASSWORD` (contraseña inicial de los usuarios semilla) y `SEED_DEMO=true` (carga datos de ejemplo).
+
+## Base de datos
+Las tablas y los usuarios iniciales se crean solos en la primera petición (idempotente).
+Contraseña inicial de todos los usuarios: `SEED_PASSWORD`, por defecto `Parcial2026!` (cambiarla en producción).
+
+| Usuario | Rol | Agencia |
+|---|---|---|
+| `dueno` | Dueño | Todas |
+| `admin.trujillo`, `admin.chiclayo`, `admin.piura`, `admin.tumbes` | Administrador | La suya |
+| `agente.trujillo`, `agente.chiclayo`, `agente.piura`, `agente.tumbes` | Agente | La suya |
+
+Con `SEED_DEMO=true` se cargan 4 clientes y 5 solicitudes pendientes de ejemplo (solo si no hay clientes).
+
+## Desarrollo
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+npm install
+cp .env.example .env.local
+npm run dev
+```
